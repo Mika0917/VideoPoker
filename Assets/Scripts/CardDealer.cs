@@ -9,30 +9,77 @@ public class CardDealer : MonoBehaviour
 
     private List<int> usedIndices = new List<int>();
 
-    // Start is called before the first frame update
-    void Start()
+    // Game state tracking
+    private enum GamePhase
     {
-        DealNewHand();
+        WaitingToDeal,
+        WaitingToDraw
+    }
+
+    private GamePhase currentPhase = GamePhase.WaitingToDeal;
+
+    // Called when the button is clicked
+    public void OnDealOrDrawButtonClicked()
+    {
+        if (currentPhase == GamePhase.WaitingToDeal)
+        {
+            DealNewHand();
+            currentPhase = GamePhase.WaitingToDraw;
+        }
+        else if (currentPhase == GamePhase.WaitingToDraw)
+        {
+            DrawCards();
+            currentPhase = GamePhase.WaitingToDeal;
+        }
     }
 
     public void DealNewHand()
     {
-        usedIndices.Clear();  // Reset used cards
+        usedIndices.Clear();
 
         for (int i = 0; i < cardObjects.Length; i++)
         {
             int randomIndex;
-
-            // Ensure each card is unique (no repeats)
             do
             {
                 randomIndex = Random.Range(0, cardSprites.Length);
-            }
-            while (usedIndices.Contains(randomIndex));
+            } while (usedIndices.Contains(randomIndex));
 
             usedIndices.Add(randomIndex);
 
-            // Assign the sprite to the card’s SpriteRenderer
+            SpriteRenderer sr = cardObjects[i].GetComponent<SpriteRenderer>();
+            sr.sprite = cardSprites[randomIndex];
+
+            // Reset hold
+            CardBehavior cb = cardObjects[i].GetComponent<CardBehavior>();
+            if (cb != null)
+            {
+                cb.isHeld = false;
+                cb.holdText.SetActive(false);
+            }
+        }
+    }
+
+    public void DrawCards()
+    {
+        usedIndices.Clear();
+
+        for (int i = 0; i < cardObjects.Length; i++)
+        {
+            CardBehavior cb = cardObjects[i].GetComponent<CardBehavior>();
+            if (cb != null && cb.isHeld)
+            {
+                continue; // Skip held cards
+            }
+
+            int randomIndex;
+            do
+            {
+                randomIndex = Random.Range(0, cardSprites.Length);
+            } while (usedIndices.Contains(randomIndex));
+
+            usedIndices.Add(randomIndex);
+
             SpriteRenderer sr = cardObjects[i].GetComponent<SpriteRenderer>();
             sr.sprite = cardSprites[randomIndex];
         }
