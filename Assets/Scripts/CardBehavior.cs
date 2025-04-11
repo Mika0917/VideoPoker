@@ -29,7 +29,6 @@ public class CardBehavior : MonoBehaviour
             holdText.SetActive(isHeld);
         }
 
-        // Optional: Debug log
-        Debug.Log(gameObject.name + " isHeld: " + isHeld);
+        //Debug.Log(gameObject.name + " isHeld: " + isHeld);
     }
 }

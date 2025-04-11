@@ -2,18 +2,27 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using UnityEngine.UI;
+using TMPro;    
 
 public class CardDealer : MonoBehaviour
 {
-    public GameObject[] cardObjects;         // References to Card1–Card5 GameObjects
+    public GameObject[] cardObjects;         // References to Card1-Card5 GameObjects
     public Sprite[] cardSprites;             // All your 52 card sprites (assigned in Inspector)
+
+    public TMP_InputField[] betInputFields;
 
     private List<int> usedIndices = new List<int>();
 
     public TMPro.TextMeshProUGUI gameOverText;
     public TMPro.TextMeshProUGUI creditsText;
     public GameObject addCreditsButton;
+
+    public UnityEngine.UI.Button betOneButton;
+    public UnityEngine.UI.Button betMaxButton;
+
     private int credits = 100;
+    private int creditsBet = 1;
 
     // Game state tracking
     private enum GamePhase
@@ -56,6 +65,10 @@ public class CardDealer : MonoBehaviour
     public void DealNewHand()
     {
         usedIndices.Clear();
+
+        // Disable bet buttons
+        betOneButton.interactable = false;
+        betMaxButton.interactable = false;
 
         for (int i = 0; i < cardObjects.Length; i++)
         {
@@ -123,10 +136,17 @@ public class CardDealer : MonoBehaviour
 
         // Evaluate final hand
         string result = EvaluateHand();
-        int payout = payoutTable[result];
+
+        int payout;
+        if (result == "Royal Flush" && creditsBet == 5) {
+            payout = 4000;
+        } else {
+            payout = creditsBet * payoutTable[result];
+        }
+        
 
         // Update credits
-        credits += payout - 1;
+        credits += payout - creditsBet;
         credits = Mathf.Max(credits, 0);
         creditsText.text = "Credits: " + credits;
 
@@ -142,6 +162,9 @@ public class CardDealer : MonoBehaviour
         gameOverText.text = popupText;
         gameOverText.alignment = TMPro.TextAlignmentOptions.Center;
         gameOverText.gameObject.SetActive(true);
+
+        betOneButton.interactable = true;
+        betMaxButton.interactable = true;
     }
 
 
@@ -185,7 +208,7 @@ public class CardDealer : MonoBehaviour
             return "Three of a Kind";
         if (CountPairs(rankCounts) == 2)
             return "Two Pair";
-        if (rankCounts.ContainsValue(2) && ranks.Exists(r => r >= 11))
+        if (rankCounts.Any(pair => pair.Value == 2 && pair.Key >= 11))
             return "Jacks or Better";
 
         return "No Win";
@@ -200,17 +223,23 @@ public class CardDealer : MonoBehaviour
             case "Q": return 12;
             case "J": return 11;
             case "10": return 10;
-            default: return int.Parse(fullRank); // 2–9
+            default: return int.Parse(fullRank); 
         }
     }
 
     private bool IsStraight(List<int> sortedRanks)
     {
+         if (sortedRanks.SequenceEqual(new List<int> { 2, 3, 4, 5, 14 })) 
+         {
+            return true;
+         }
+
         for (int i = 0; i < sortedRanks.Count - 1; i++)
         {
             if (sortedRanks[i + 1] != sortedRanks[i] + 1)
                 return false;
         }
+
         return true;
     }
 
@@ -238,4 +267,62 @@ public class CardDealer : MonoBehaviour
         return count;
     }
 
+    public void DealTest()
+    {
+    string[] testHand = { "2H", "2C", "JH", "KH", "AH" }; 
+
+    for (int i = 0; i < cardObjects.Length; i++)
+    {
+        // Find the sprite by name
+        Sprite match = cardSprites.FirstOrDefault(s => s.name == testHand[i]);
+        if (match != null)
+        {
+            cardObjects[i].GetComponent<SpriteRenderer>().sprite = match;
+        }
+
+        // Reset holds
+        CardBehavior cb = cardObjects[i].GetComponent<CardBehavior>();
+        if (cb != null)
+        {
+            cb.isHeld = false;
+            cb.holdText.SetActive(false);
+        }
+    }
+
+    // Force evaluation
+    string result = EvaluateHand();
+    Debug.Log("Test Result: " + result);
+}
+
+public void BetOne() 
+{
+    if (creditsBet < 5) {
+        creditsBet += 1;
+    } else {
+        creditsBet = 1;
+    }
+
+    UpdateBetFieldUI();
+}
+
+public void BetMax() 
+{
+    creditsBet = 5;
+
+    UpdateBetFieldUI();
+}
+
+ private void UpdateBetFieldUI()
+    {
+        for (int i = 0; i < betInputFields.Length; i++)
+        {
+            // Get the Image component from each InputField
+            Image bgImage = betInputFields[i].GetComponent<Image>();
+            // Check if this field corresponds to the current bet
+            if (i == creditsBet - 1)
+                bgImage.color = new Color32(255, 0, 0, 255); // Highlight color
+            else
+                bgImage.color = new Color32(150, 150, 150, 255); // Default color
+        }
+    }
 }
