@@ -7,6 +7,8 @@ public class CardBehavior : MonoBehaviour
     public bool isHeld = false;
     public GameObject holdText;
 
+    [HideInInspector] public bool canHold = false;
+
     void Start()
     {
         isHeld = false;
@@ -20,6 +22,9 @@ public class CardBehavior : MonoBehaviour
 
     private void OnMouseDown()
     {
+
+        if (!canHold) return;
+
         // Toggle held state
         isHeld = !isHeld;
 

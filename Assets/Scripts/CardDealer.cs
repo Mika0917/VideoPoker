@@ -21,6 +21,8 @@ public class CardDealer : MonoBehaviour
     public UnityEngine.UI.Button betOneButton;
     public UnityEngine.UI.Button betMaxButton;
 
+    public TextMeshProUGUI dealButtonText;
+
     private int credits = 100;
     private int creditsBet = 1;
 
@@ -54,15 +56,22 @@ public class CardDealer : MonoBehaviour
         {
             DealNewHand();
             currentPhase = GamePhase.WaitingToDraw;
+            dealButtonText.text = "Draw";
         }
         else if (currentPhase == GamePhase.WaitingToDraw)
         {
             DrawCards();
             currentPhase = GamePhase.WaitingToDeal;
+            dealButtonText.text = "Deal";
         }
     }
 
     public void DealNewHand()
+    {
+        StartCoroutine(DealCardsSequentially());
+    }
+
+    private IEnumerator DealCardsSequentially()
     {
         usedIndices.Clear();
 
@@ -80,6 +89,7 @@ public class CardDealer : MonoBehaviour
 
             usedIndices.Add(randomIndex);
 
+            // Set sprite
             SpriteRenderer sr = cardObjects[i].GetComponent<SpriteRenderer>();
             sr.sprite = cardSprites[randomIndex];
 
@@ -89,28 +99,37 @@ public class CardDealer : MonoBehaviour
             {
                 cb.isHeld = false;
                 cb.holdText.SetActive(false);
+                cb.canHold = true;
             }
+
+            // Wait before flipping next card
+            yield return new WaitForSeconds(0.075f);
         }
 
-        // Check if initial hand has a winning result
+        // After all cards are dealt, check for winning hand
         string result = EvaluateHand();
         int payout = payoutTable[result];
 
         if (payout > 0)
         {
-            gameOverText.text = $"Initial Deal: {result}";
-            gameOverText.color = Color.cyan;
-            gameOverText.fontStyle = TMPro.FontStyles.Italic;
+            gameOverText.text = $"<size=50><b><color=#000000>Initial Deal: {result}</color></b></size>";
+            gameOverText.alignment = TMPro.TextAlignmentOptions.Center;
             gameOverText.gameObject.SetActive(true);
         }
         else
         {
             gameOverText.gameObject.SetActive(false);
         }
+
     }
 
 
     public void DrawCards()
+    {
+        StartCoroutine(DrawCardsSequentially());
+    }
+
+    private IEnumerator DrawCardsSequentially()
     {
         usedIndices.Clear();
 
@@ -118,9 +137,7 @@ public class CardDealer : MonoBehaviour
         {
             CardBehavior cb = cardObjects[i].GetComponent<CardBehavior>();
             if (cb != null && cb.isHeld)
-            {
                 continue; // Skip held cards
-            }
 
             int randomIndex;
             do
@@ -132,18 +149,18 @@ public class CardDealer : MonoBehaviour
 
             SpriteRenderer sr = cardObjects[i].GetComponent<SpriteRenderer>();
             sr.sprite = cardSprites[randomIndex];
+
+            yield return new WaitForSeconds(0.075f);
         }
 
         // Evaluate final hand
         string result = EvaluateHand();
 
         int payout;
-        if (result == "Royal Flush" && creditsBet == 5) {
+        if (result == "Royal Flush" && creditsBet == 5)
             payout = 4000;
-        } else {
+        else
             payout = creditsBet * payoutTable[result];
-        }
-        
 
         // Update credits
         credits += payout - creditsBet;
@@ -155,13 +172,32 @@ public class CardDealer : MonoBehaviour
 
         if (payout > 0)
         {
-            popupText += $"<b><color=yellow>{result}! You won {payout} credits!</color></b>\n";
+            popupText += $"<b><size=50><color=black>{result}</color></size></b>\n";
+            popupText += $"<b><size=50><color=black>You won {payout} credits!</color></size></b>\n";
+        }
+        else
+        {
+            popupText += $"<b><size=50><color=black>{result}</color></size></b>\n";
+            popupText += $"<b><size=50><color=black>No Payout</color></size></b>\n";
         }
 
-        popupText += "<b><color=red>Game Over</color></b>";
+        popupText += "<b><size=50><color=red>GAME OVER</color></size></b>";
+
         gameOverText.text = popupText;
         gameOverText.alignment = TMPro.TextAlignmentOptions.Center;
         gameOverText.gameObject.SetActive(true);
+
+        // Hide all hold labels at the end of the round
+        foreach (GameObject card in cardObjects)
+        {
+            CardBehavior c = card.GetComponent<CardBehavior>();
+            if (c != null)
+            {
+                c.isHeld = false;
+                c.holdText.SetActive(false);
+                c.canHold = false;
+            }
+        }
 
         betOneButton.interactable = true;
         betMaxButton.interactable = true;
@@ -326,3 +362,4 @@ public void BetMax()
         }
     }
 }
+
