@@ -23,6 +23,8 @@ public class CardDealer : MonoBehaviour
 
     public TextMeshProUGUI dealButtonText;
 
+    public TextMeshProUGUI betDisplayText;
+
     private int credits = 100;
     private int creditsBet = 1;
 
@@ -73,6 +75,13 @@ public class CardDealer : MonoBehaviour
 
     private IEnumerator DealCardsSequentially()
     {
+
+        if (creditsBet > credits)
+        {
+            creditsBet = credits;
+            UpdateBetFieldUI();
+        }
+
         usedIndices.Clear();
 
         // Disable bet buttons
@@ -173,7 +182,7 @@ public class CardDealer : MonoBehaviour
         if (payout > 0)
         {
             popupText += $"<b><size=50><color=black>{result}</color></size></b>\n";
-            popupText += $"<b><size=50><color=black>You won {payout} credits!</color></size></b>\n";
+            popupText += $"<b><size=50><color=blue>You won {payout} credits!</color></size></b>\n";
         }
         else
         {
@@ -330,25 +339,27 @@ public class CardDealer : MonoBehaviour
     Debug.Log("Test Result: " + result);
 }
 
-public void BetOne() 
-{
-    if (creditsBet < 5) {
-        creditsBet += 1;
-    } else {
-        creditsBet = 1;
+    public void BetOne()
+    {
+        if (creditsBet < Mathf.Min(5, credits))
+        {
+            creditsBet += 1;
+        }
+        else
+        {
+            creditsBet = 1;
+        }
+        UpdateBetFieldUI();
     }
 
-    UpdateBetFieldUI();
-}
 
-public void BetMax() 
-{
-    creditsBet = 5;
+    public void BetMax() 
+    {
+        creditsBet = Mathf.Min(5, credits);
+        UpdateBetFieldUI();
+    }
 
-    UpdateBetFieldUI();
-}
-
- private void UpdateBetFieldUI()
+    private void UpdateBetFieldUI()
     {
         for (int i = 0; i < betInputFields.Length; i++)
         {
@@ -360,6 +371,10 @@ public void BetMax()
             else
                 bgImage.color = new Color32(150, 150, 150, 255); // Default color
         }
+        if (betDisplayText != null)
+        {
+            betDisplayText.text = "Bet: " + creditsBet;
+        }
     }
-}
+}   
 
