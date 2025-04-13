@@ -133,7 +133,6 @@ public class CardDealer : MonoBehaviour
 
     private IEnumerator DrawCardsSequentially()
     {
-        usedIndices.Clear();
 
         for (int i = 0; i < cardObjects.Length; i++)
         {
