@@ -25,15 +25,12 @@ public class CardBehavior : MonoBehaviour
 
         if (!canHold) return;
 
-        // Toggle held state
         isHeld = !isHeld;
 
-        // Show or hide HOLD text
         if (holdText != null)
         {
             holdText.SetActive(isHeld);
         }
 
-        //Debug.Log(gameObject.name + " isHeld: " + isHeld);
     }
 }

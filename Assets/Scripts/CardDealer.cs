@@ -7,8 +7,8 @@ using TMPro;
 
 public class CardDealer : MonoBehaviour
 {
-    public GameObject[] cardObjects;         // References to Card1-Card5 GameObjects
-    public Sprite[] cardSprites;             // All your 52 card sprites (assigned in Inspector)
+    public GameObject[] cardObjects;
+    public Sprite[] cardSprites;
 
     public TMP_InputField[] betInputFields;
 
@@ -28,7 +28,6 @@ public class CardDealer : MonoBehaviour
     private int credits = 100;
     private int creditsBet = 1;
 
-    // Game state tracking
     private enum GamePhase
     {
         WaitingToDeal,
@@ -51,7 +50,6 @@ public class CardDealer : MonoBehaviour
         { "No Win", 0 }
     };
 
-    // Called when the button is clicked
     public void OnDealOrDrawButtonClicked()
     {
         if (currentPhase == GamePhase.WaitingToDeal)
@@ -84,7 +82,6 @@ public class CardDealer : MonoBehaviour
 
         usedIndices.Clear();
 
-        // Disable bet buttons
         betOneButton.interactable = false;
         betMaxButton.interactable = false;
 
@@ -98,11 +95,9 @@ public class CardDealer : MonoBehaviour
 
             usedIndices.Add(randomIndex);
 
-            // Set sprite
             SpriteRenderer sr = cardObjects[i].GetComponent<SpriteRenderer>();
             sr.sprite = cardSprites[randomIndex];
 
-            // Reset hold
             CardBehavior cb = cardObjects[i].GetComponent<CardBehavior>();
             if (cb != null)
             {
@@ -111,11 +106,9 @@ public class CardDealer : MonoBehaviour
                 cb.canHold = true;
             }
 
-            // Wait before flipping next card
             yield return new WaitForSeconds(0.075f);
         }
 
-        // After all cards are dealt, check for winning hand
         string result = EvaluateHand();
         int payout = payoutTable[result];
 
@@ -146,7 +139,7 @@ public class CardDealer : MonoBehaviour
         {
             CardBehavior cb = cardObjects[i].GetComponent<CardBehavior>();
             if (cb != null && cb.isHeld)
-                continue; // Skip held cards
+                continue;
 
             int randomIndex;
             do
@@ -162,7 +155,6 @@ public class CardDealer : MonoBehaviour
             yield return new WaitForSeconds(0.075f);
         }
 
-        // Evaluate final hand
         string result = EvaluateHand();
 
         int payout;
@@ -171,12 +163,10 @@ public class CardDealer : MonoBehaviour
         else
             payout = creditsBet * payoutTable[result];
 
-        // Update credits
         credits += payout - creditsBet;
         credits = Mathf.Max(credits, 0);
         creditsText.text = "Credits: " + credits;
 
-        // Build game over message
         string popupText = "";
 
         if (payout > 0)
@@ -196,7 +186,6 @@ public class CardDealer : MonoBehaviour
         gameOverText.alignment = TMPro.TextAlignmentOptions.Center;
         gameOverText.gameObject.SetActive(true);
 
-        // Hide all hold labels at the end of the round
         foreach (GameObject card in cardObjects)
         {
             CardBehavior c = card.GetComponent<CardBehavior>();
@@ -208,8 +197,7 @@ public class CardDealer : MonoBehaviour
             }
         }
 
-        betOneButton.interactable = true;
-        betMaxButton.interactable = true;
+        CheckCredits();
     }
 
 
@@ -318,14 +306,13 @@ public class CardDealer : MonoBehaviour
 
     for (int i = 0; i < cardObjects.Length; i++)
     {
-        // Find the sprite by name
+
         Sprite match = cardSprites.FirstOrDefault(s => s.name == testHand[i]);
         if (match != null)
         {
             cardObjects[i].GetComponent<SpriteRenderer>().sprite = match;
         }
 
-        // Reset holds
         CardBehavior cb = cardObjects[i].GetComponent<CardBehavior>();
         if (cb != null)
         {
@@ -334,7 +321,6 @@ public class CardDealer : MonoBehaviour
         }
     }
 
-    // Force evaluation
     string result = EvaluateHand();
     Debug.Log("Test Result: " + result);
 }
@@ -363,18 +349,44 @@ public class CardDealer : MonoBehaviour
     {
         for (int i = 0; i < betInputFields.Length; i++)
         {
-            // Get the Image component from each InputField
             Image bgImage = betInputFields[i].GetComponent<Image>();
-            // Check if this field corresponds to the current bet
             if (i == creditsBet - 1)
-                bgImage.color = new Color32(255, 0, 0, 255); // Highlight color
+                bgImage.color = new Color32(255, 0, 0, 255);
             else
-                bgImage.color = new Color32(150, 150, 150, 255); // Default color
+                bgImage.color = new Color32(150, 150, 150, 255);
         }
         if (betDisplayText != null)
         {
             betDisplayText.text = "Bet: " + creditsBet;
         }
     }
-}   
+
+    public void OnAddCreditsClicked()
+    {
+        credits = 100;
+        creditsBet = 1;
+        creditsText.text = "Credits: " + credits;
+        UpdateBetFieldUI();
+        CheckCredits();
+    }
+
+    private void CheckCredits()
+    {
+        if (creditsBet > credits)
+        {
+            creditsBet = credits;
+            UpdateBetFieldUI();
+        }
+
+        bool hasCredits = credits > 0;
+
+        betOneButton.interactable = hasCredits;
+        betMaxButton.interactable = hasCredits;
+        dealButtonText.transform.parent.GetComponent<Button>().interactable = hasCredits;
+
+        addCreditsButton.SetActive(!hasCredits);
+    }
+
+
+}
 
